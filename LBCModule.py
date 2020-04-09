@@ -1,11 +1,16 @@
 import pandas as pd
+print("> Pandas version: ", pd.__version__)
 import numpy as np
 from ipywidgets import Checkbox, Output, VBox, widgets, Layout, Box, Label
 from os import listdir, mkdir, path
 from os.path import isfile, join
 from IPython.display import display, display_html, Markdown
 from shutil import make_archive, rmtree
-import geopandas as gpd
+try:
+	import geopandas as gpd
+	print("> Geopandas version: ", gpd.__version__)
+except ImportError:
+	print("> Geopandas not installed. Shape files cannot be exported.")
 
 def DisplayWebTAGTables(WebTAG1, WebTAG2, W):
     if W == 1:
@@ -24,7 +29,7 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
         Columns, OColumns = [], []
         with out:
             out.clear_output()
-            Fileoutput, val, D, N, S, L, P, W, G = Selection(FileList, Day, Night, ST, LT, PS, WT, GS, D, N, S, L, P, W, G)
+            Fileoutput, val, D, N, S, L, P, W, G = Selection(FileList, Day, Night, ST, LT, PS, WT, GS, D, N, S, L, P, W, G)            
             if val == 1:
                 print('Error')
             else:
@@ -32,8 +37,8 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
                 Tab1 = ExcelRead(fullpath)
                 Tab1, Columns, OColumns = AddColumns(Tab1,D,N,S,L) # Columns(Input, Day, Night, ST, LT)
                 DMRB_ST, DMRB_LT, RelDF = LBCGC(Tab1, Columns, OColumns, D, N, S, L) #LBCGC(Tab1, Columns, OColumns, D, N, ST, LT)
-                DisplayDMRBTables(DMRB_ST, DMRB_LT)
-                AbsDF = AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outputloc, G, P)
+                DisplayDMRBTables(DMRB_ST, DMRB_LT, S, L)
+                AbsDF = AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outputloc, D, N, S, L, G, P)
                 WebTAG1, WebTAG2 = WebTAG(AbsDF, OColumns, W)
                 DisplayWebTAGTables(WebTAG1, WebTAG2, W)
                 print('\n> Process complete')
@@ -169,22 +174,29 @@ def WebTAG(dfInput, OColumns, W):
         WebTAGdf1, WebTAGdf2 = 0, 0
     return(WebTAGdf1, WebTAGdf2)
 
-def DisplayDMRBTables(DMRB_ST,DMRB_LT):
-    df1_styler = DMRB_ST.style.set_table_attributes("style='display:inline'") \
+def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
+    DMRB_ST.fillna(0, inplace=True)
+    DMRB_LT.fillna(0, inplace=True)
+    Table1 = DMRB_ST.set_index('Change').rename_axis(None)
+    Table2 = DMRB_LT.set_index('Change').rename_axis(None)
+    df1_styler = Table1.style.set_table_attributes("style='display:inline'") \
                 .set_caption('Short-term DMRB LA111 (Greatest change)') \
-                .hide_index() \
                 .format({'ST Day RES': '{:,.0f}' \
                 .format,'ST Day OSR': '{:,.0f}' \
                 .format,'ST Night RES': '{:,.0f}' \
                 .format,'ST Night OSR': '{:,.0f}'})
-    df2_styler = DMRB_LT.style.set_table_attributes("style='display:inline'") \
+    df2_styler = Table2.style.set_table_attributes("style='display:inline'") \
                 .set_caption('Long-term DMRB LA111 (Greatest change)') \
-                .hide_index() \
                 .format({'LT Day RES': '{:,.0f}' \
                 .format,'LT Day OSR': '{:,.0f}' \
                 .format,'LT Night RES': '{:,.0f}' \
                 .format,'LT Night OSR': '{:,.0f}'})
-    display_html(df1_styler._repr_html_()+" "+df2_styler._repr_html_(), raw=True)
+    if S == 1 and L == 1:
+        display_html(df1_styler._repr_html_()+" "+df2_styler._repr_html_(), raw=True)
+    if S == 1 and L == 0:
+        display_html(df1_styler._repr_html_(), raw=True)
+    if S == 0 and L == 1:
+        display_html(df2_styler._repr_html_(), raw=True)
     return()
 
 def DMRBChange(df, column, DT):
@@ -271,10 +283,12 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     DMRB_LT['Change'] = ['<=-10','>-10<=-5', '>-5<=-3', '>=-3<0', '=0','>0<3','>=3<5','>=5<10','>=10']
     DMRB_ST.set_index(['Change'], inplace=True)
     DMRB_LT.set_index(['Change'], inplace=True)
+    
     if S == 0 and L == 0:
         raise Exception('Short term or Long term input required LBCGC(Tab1, Columns, OColumns, D, N, ->ST, ->LT)')
     if D == 0 and N == 0:
         raise Exception('Day or Night input required LBCGC(Tab1, Columns, OColumns, ->D, ->N, ST, LT)')
+        
     if D == 1 and S == 1:
         Tab1STGC1 = Tab1[Tab1['ST_CH_GC'] == Tab1.groupby('BLD')['ST_CH_GC'].transform('max')]
         Tab1STGC = pd.DataFrame(Tab1STGC1[Tab1STGC1['DSO'] == Tab1STGC1.groupby('BLD')['DSO'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
@@ -288,6 +302,7 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         STDayOSRGC.set_index('Change', inplace=True)
         DMRB_ST.update(STDayDwellGC['ST Day RES'])
         DMRB_ST.update(STDayOSRGC['ST Day OSR'])
+        
     if D == 1 and L == 1:    
         Tab1LTGC1 = Tab1[Tab1['LT_CH_GC'] == Tab1.groupby('BLD')['LT_CH_GC'].transform('max')]
         Tab1LTGC = pd.DataFrame(Tab1LTGC1[Tab1LTGC1['DSD'] == Tab1LTGC1.groupby('BLD')['DSD'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
@@ -301,9 +316,10 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         LTDayOSRGC.set_index('Change', inplace=True)
         DMRB_LT.update(LTDayDwellGC['LT Day RES'])
         DMRB_LT.update(LTDayOSRGC['LT Day OSR'])
+        
     if N == 1 and S == 1:    
         Tab1NSTGC1 = Tab1[Tab1['N_ST_CH_GC'] == Tab1.groupby('BLD')['N_ST_CH_GC'].transform('max')]
-        Tab1NSTGC = pd.DataFrame(Tab1STGC1[Tab1STGC1['DSON'] == Tab1STGC1.groupby('BLD')['DSON'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1NSTGC = pd.DataFrame(Tab1NSTGC1[Tab1NSTGC1['DSON'] == Tab1NSTGC1.groupby('BLD')['DSON'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         RelDF.update(Tab1NSTGC)
         Tab1NSTGCRES, Tab1NSTGCOSR = Tab1NSTGC[Tab1NSTGC['SNSTV']=='RES'], Tab1NSTGC[Tab1NSTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NSTGCRES, 'N_ST_CH', ST)
@@ -313,10 +329,11 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         STNightDwellGC.set_index('Change', inplace=True)
         STNightOSRGC.set_index('Change', inplace=True)
         DMRB_ST.update(STNightDwellGC['ST Night RES'])
-        DMRB_ST.update(STNightOSRGC['ST Night OSR'])        
+        DMRB_ST.update(STNightOSRGC['ST Night OSR']) 
+        
     if N == 1 and L == 1:     
         Tab1NLTGC1 = Tab1[Tab1['N_LT_CH_GC'] == Tab1.groupby('BLD')['N_LT_CH_GC'].transform('max')]
-        Tab1NLTGC = pd.DataFrame(Tab1LTGC1[Tab1LTGC1['DSDN'] == Tab1LTGC1.groupby('BLD')['DSDN'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1NLTGC = pd.DataFrame(Tab1NLTGC1[Tab1NLTGC1['DSDN'] == Tab1NLTGC1.groupby('BLD')['DSDN'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         RelDF.update(Tab1NLTGC)
         Tab1NLTGCRES, Tab1NLTGCOSR = Tab1NLTGC[Tab1NLTGC['SNSTV']=='RES'], Tab1NLTGC[Tab1NLTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NLTGCRES, 'N_LT_CH', LT)
@@ -334,47 +351,61 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     DMRB_LT.reset_index(inplace=True)
     return(DMRB_ST, DMRB_LT, RelDF)
 
-def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, G, P):
-    Tab1DSOAbs1 = Tab1[Tab1['DSO'] == Tab1.groupby('BLD')['DSO'].transform('max')]
-    Tab1DSOAbs = pd.DataFrame(Tab1DSOAbs1[Tab1DSOAbs1['ST_CH_GC'] == Tab1DSOAbs1.groupby('BLD')['ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-    Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')]
-    Tab1DSDAbs = pd.DataFrame(Tab1DSDAbs1[Tab1DSDAbs1['LT_CH_GC'] == Tab1DSDAbs1.groupby('BLD')['LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S, L, G, P):
 
-    Tab1DSONAbs1 = Tab1[Tab1['DSON'] == Tab1.groupby('BLD')['DSON'].transform('max')]
-    Tab1DSONAbs = pd.DataFrame(Tab1DSONAbs1[Tab1DSONAbs1['N_ST_CH_GC'] == Tab1DSONAbs1.groupby('BLD')['N_ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-    Tab1DSDNAbs1 = Tab1[Tab1['DSDN'] == Tab1.groupby('BLD')['DSDN'].transform('max')]
-    Tab1DSDNAbs = pd.DataFrame(Tab1DSDNAbs1[Tab1DSDNAbs1['N_LT_CH_GC'] == Tab1DSDNAbs1.groupby('BLD')['N_LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-
-    AbsDF = pd.DataFrame(Tab1DSOAbs[OColumns])
-    AbsDF.update(Tab1DSDAbs['DSD'])
-    AbsDF.update(Tab1DSONAbs['DSON'])
-    AbsDF.update(Tab1DSONAbs['DSDN'])
-
+    AbsDF = pd.DataFrame(Tab1[OColumns])
+    
+    #short term day
+    if D == 1 and S == 1:
+        Tab1DSOAbs1 = Tab1[Tab1['DSO'] == Tab1.groupby('BLD')['DSO'].transform('max')]
+        Tab1DSOAbs = pd.DataFrame(Tab1DSOAbs1[Tab1DSOAbs1['ST_CH_GC'] == Tab1DSOAbs1.groupby('BLD')['ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        AbsDF.update(Tab1DSOAbs['DSO'])
+        
+    #long term day
+    if D == 1 and L == 1:
+        Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')]
+        Tab1DSDAbs = pd.DataFrame(Tab1DSDAbs1[Tab1DSDAbs1['LT_CH_GC'] == Tab1DSDAbs1.groupby('BLD')['LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        AbsDF.update(Tab1DSDAbs['DSD'])
+  
+    #short term night
+    if N == 1 and S == 1:
+        Tab1DSONAbs1 = Tab1[Tab1['DSON'] == Tab1.groupby('BLD')['DSON'].transform('max')]
+        Tab1DSONAbs = pd.DataFrame(Tab1DSONAbs1[Tab1DSONAbs1['N_ST_CH_GC'] == Tab1DSONAbs1.groupby('BLD')['N_ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        AbsDF.update(Tab1DSONAbs['DSON'])    
+    
+    #long term night
+    if N == 1 and L == 1:
+        Tab1DSDNAbs1 = Tab1[Tab1['DSDN'] == Tab1.groupby('BLD')['DSDN'].transform('max')]
+        Tab1DSDNAbs = pd.DataFrame(Tab1DSDNAbs1[Tab1DSDNAbs1['N_LT_CH_GC'] == Tab1DSDNAbs1.groupby('BLD')['N_LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        AbsDF.update(Tab1DSDNAbs['DSDN'])
+    
     AbsDF = AbsDF.set_index('BLD')
     RelDF = RelDF.set_index('BLD')
-
-    AbsDF.update(RelDF['ST_CH'])
-    AbsDF.update(RelDF['LT_CH'])
-    AbsDF.update(RelDF['N_ST_CH'])
-    AbsDF.update(RelDF['N_LT_CH'])
-
-    AbsDF['DSO_LOAEL'] = np.where((Tab1DSOAbs['DSO']>=LOAEL) & (Tab1DSOAbs['DSO']<SOAEL),'Yes','No')
-    AbsDF['DSO_SOAEL'] = np.where(Tab1DSOAbs['DSO']>=SOAEL,'Yes','No')
-    AbsDF['DSD_LOAEL'] = np.where((Tab1DSDAbs['DSD']>=LOAEL) & (Tab1DSDAbs['DSD']<SOAEL),'Yes','No')
-    AbsDF['DSD_SOAEL'] = np.where(Tab1DSDAbs['DSD']>=SOAEL,'Yes','No')
-    AbsDF['DSO_NEW_LOAEL'] = np.where((Tab1DSOAbs['DMO']<LOAEL) & (Tab1DSOAbs['DSO']>=LOAEL),'Yes','No')
-    AbsDF['DSD_NEW_LOAEL'] = np.where((Tab1DSDAbs['DMO']<LOAEL) & (Tab1DSDAbs['DSD']>=LOAEL),'Yes','No')
-    AbsDF['DSO_NEW_SOAEL'] = np.where((Tab1DSOAbs['DMO']<SOAEL) & (Tab1DSOAbs['DSO']>=SOAEL),'Yes','No')
-    AbsDF['DSD_NEW_SOAEL'] = np.where((Tab1DSDAbs['DMO']<SOAEL) & (Tab1DSDAbs['DSD']>=SOAEL),'Yes','No')
-
-    AbsDF['DSON_LOAEL'] = np.where((Tab1DSOAbs['DSON']>=NLOAEL) & (Tab1DSOAbs['DSON']<NSOAEL),'Yes','No')
-    AbsDF['DSON_SOAEL'] = np.where(Tab1DSOAbs['DSON']>=NSOAEL,'Yes','No')
-    AbsDF['DSDN_LOAEL'] = np.where((Tab1DSDAbs['DSDN']>=NLOAEL) & (Tab1DSDAbs['DSDN']<NSOAEL),'Yes','No')
-    AbsDF['DSDN_SOAEL'] = np.where(Tab1DSDAbs['DSDN']>=NSOAEL,'Yes','No')
-    AbsDF['DSON_NEW_LOAEL'] = np.where((Tab1DSOAbs['DMON']<NLOAEL) & (Tab1DSOAbs['DSON']>=NLOAEL),'Yes','No')
-    AbsDF['DSDN_NEW_LOAEL'] = np.where((Tab1DSDAbs['DMON']<NLOAEL) & (Tab1DSDAbs['DSDN']>=NLOAEL),'Yes','No')
-    AbsDF['DSON_NEW_SOAEL'] = np.where((Tab1DSOAbs['DMON']<NSOAEL) & (Tab1DSOAbs['DSON']>=NSOAEL),'Yes','No')
-    AbsDF['DSDN_NEW_SOAEL'] = np.where((Tab1DSDAbs['DMON']<NSOAEL) & (Tab1DSDAbs['DSDN']>=NSOAEL),'Yes','No')
+    
+    if D == 1 and S == 1:
+        AbsDF.update(RelDF['ST_CH'])
+        AbsDF['DSO_LOAEL'] = np.where((AbsDF['DSO']>=LOAEL) & (AbsDF['DSO']<SOAEL),'Yes','No')
+        AbsDF['DSO_SOAEL'] = np.where(AbsDF['DSO']>=SOAEL,'Yes','No')
+        AbsDF['DSO_NEW_LOAEL'] = np.where((AbsDF['DMO']<LOAEL) & (AbsDF['DSO']>=LOAEL),'Yes','No')
+        AbsDF['DSO_NEW_SOAEL'] = np.where((AbsDF['DMO']<SOAEL) & (AbsDF['DSO']>=SOAEL),'Yes','No')
+    if D == 1 and L == 1:
+        AbsDF.update(RelDF['LT_CH'])
+        AbsDF['DSD_LOAEL'] = np.where((AbsDF['DSD']>=LOAEL) & (AbsDF['DSD']<SOAEL),'Yes','No')
+        AbsDF['DSD_SOAEL'] = np.where(AbsDF['DSD']>=SOAEL,'Yes','No')
+        AbsDF['DSD_NEW_LOAEL'] = np.where((AbsDF['DMO']<LOAEL) & (AbsDF['DSD']>=LOAEL),'Yes','No')
+        AbsDF['DSD_NEW_SOAEL'] = np.where((AbsDF['DMO']<SOAEL) & (AbsDF['DSD']>=SOAEL),'Yes','No')
+    if N == 1 and S == 1:
+        AbsDF.update(RelDF['N_ST_CH'])
+        AbsDF['DSON_LOAEL'] = np.where((AbsDF['DSON']>=NLOAEL) & (AbsDF['DSON']<NSOAEL),'Yes','No')
+        AbsDF['DSON_SOAEL'] = np.where(AbsDF['DSON']>=NSOAEL,'Yes','No')
+        AbsDF['DSON_NEW_LOAEL'] = np.where((AbsDF['DMON']<NLOAEL) & (AbsDF['DSON']>=NLOAEL),'Yes','No')
+        AbsDF['DSON_NEW_SOAEL'] = np.where((AbsDF['DMON']<NSOAEL) & (AbsDF['DSON']>=NSOAEL),'Yes','No')
+    if N == 1 and L == 1: 
+        AbsDF.update(RelDF['N_LT_CH'])
+        AbsDF['DSDN_LOAEL'] = np.where((AbsDF['DSDN']>=NLOAEL) & (AbsDF['DSDN']<NSOAEL),'Yes','No')
+        AbsDF['DSDN_SOAEL'] = np.where(AbsDF['DSDN']>=NSOAEL,'Yes','No')
+        AbsDF['DSDN_NEW_LOAEL'] = np.where((AbsDF['DMON']<NLOAEL) & (AbsDF['DSDN']>=NLOAEL),'Yes','No')
+        AbsDF['DSDN_NEW_SOAEL'] = np.where((AbsDF['DMON']<NSOAEL) & (AbsDF['DSDN']>=NSOAEL),'Yes','No')  
 
     if P == 1:
         print('> Saving excel file as output.xlsx')
@@ -395,7 +426,7 @@ def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, G, P):
                 print("Error: %s : %s" % (tempdir, e.strerror))
             mkdir(tempdir)
             AbsDFgpd.to_file(tempdir+"Output.shp")
-            print("> Saving "+output_filename+" as zip file")
+            print("> Compressing output to zip file: "+output_filename+".zip")
             make_archive(base_dir=base, root_dir=root, format='zip', base_name=basename)
         else:
             mkdir(tempdir)
