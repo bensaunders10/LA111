@@ -1,5 +1,6 @@
 import pandas as pd
 print("> Pandas version: ", pd.__version__)
+pd.options.mode.chained_assignment = None
 import numpy as np
 from ipywidgets import Checkbox, Output, VBox, widgets, Layout, Box, Label
 from os import listdir, mkdir, path
@@ -200,33 +201,33 @@ def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
     return()
 
 def DMRBChange(df, column, DT):
-    df[">=" + str(DT[0])]                    = (df[column] >= DT[0])
-    df[">=" + str(DT[1]) + "<" + str(DT[0])] = (df[column] < DT[0]) & (df[column] >= DT[1])
-    df[">=" + str(DT[2]) + "<" + str(DT[1])] = (df[column] < DT[1]) & (df[column] >= DT[2])
-    df[">" + str(DT[3]) + "<" + str(DT[2])] = (df[column] < DT[2]) & (df[column] > DT[3])
-    df["=" + str(DT[3])]                     = (df[column] == DT[3])
-    df[">=" + str(DT[4]) + "<" + str(DT[3])]  = (df[column] > DT[4]) & (df[column] < DT[3])
-    df[">" + str(DT[5]) + "<=" + str(DT[4])] = (df[column] > DT[5]) & (df[column] <= DT[4])
-    df[">" + str(DT[6]) + "<=" + str(DT[5])] = (df[column] > DT[6]) & (df[column] <= DT[5])
-    df["<=" + str(DT[6])]                    = (df[column] <= DT[6])
+    df.loc[:,">=" + str(DT[0])]                    = (df[column] >= DT[0])
+    df.loc[:,">=" + str(DT[1]) + "<" + str(DT[0])] = (df[column] < DT[0]) & (df[column] >= DT[1])
+    df.loc[:,">=" + str(DT[2]) + "<" + str(DT[1])] = (df[column] < DT[1]) & (df[column] >= DT[2])
+    df.loc[:,">" + str(DT[3]) + "<" + str(DT[2])] = (df[column] < DT[2]) & (df[column] > DT[3])
+    df.loc[:,"=" + str(DT[3])]                     = (df[column] == DT[3])
+    df.loc[:,">=" + str(DT[4]) + "<" + str(DT[3])]  = (df[column] > DT[4]) & (df[column] < DT[3])
+    df.loc[:,">" + str(DT[5]) + "<=" + str(DT[4])] = (df[column] > DT[5]) & (df[column] <= DT[4])
+    df.loc[:,">" + str(DT[6]) + "<=" + str(DT[5])] = (df[column] > DT[6]) & (df[column] <= DT[5])
+    df.loc[:,"<=" + str(DT[6])]                    = (df[column] <= DT[6])
     return
 
 def Tabular(df, column, OColumns, WT):
     LEQC = 2   # L10 to Leq16hr correction
-    df["<" + str(WT[0])]              = (df[column] < WT[0]+LEQC)
-    df[str(WT[0]) + "-" + str(WT[1])] = (df[column] >= WT[0]+LEQC) & (df[column] < WT[1]+LEQC)
-    df[str(WT[1]) + "-" + str(WT[2])] = (df[column] >= WT[1]+LEQC) & (df[column] < WT[2]+LEQC)
-    df[str(WT[2]) + "-" + str(WT[3])] = (df[column] >= WT[2]+LEQC) & (df[column] < WT[3]+LEQC)
-    df[str(WT[3]) + "-" + str(WT[4])] = (df[column] >= WT[3]+LEQC) & (df[column] < WT[4]+LEQC)
-    df[str(WT[4]) + "-" + str(WT[5])] = (df[column] >= WT[4]+LEQC) & (df[column] < WT[5]+LEQC)
-    df[str(WT[5]) + "-" + str(WT[6])] = (df[column] >= WT[5]+LEQC) & (df[column] < WT[6]+LEQC)
-    df[str(WT[6]) + "-" + str(WT[7])] = (df[column] >= WT[6]+LEQC) & (df[column] < WT[7]+LEQC)
-    df[str(WT[7]) + "-" + str(WT[8])] = (df[column] >= WT[7]+LEQC) & (df[column] < WT[8]+LEQC)
-    df[str(WT[8]) + "-" + str(WT[9])] = (df[column] >= WT[8]+LEQC) & (df[column] < WT[9]+LEQC)
-    df[str(WT[9]) + "-" + str(WT[10])] = (df[column] >= WT[9]+LEQC) & (df[column] < WT[10]+LEQC)
-    df[str(WT[10]) + "-" + str(WT[11])] = (df[column] >= WT[10]+LEQC) & (df[column] < WT[11]+LEQC)
-    df[str(WT[11]) + "-" + str(WT[12])] = (df[column] >= WT[11]+LEQC) & (df[column] < WT[12]+LEQC)
-    df[">=" + str(WT[12])]              = (df[column] >= WT[12]+LEQC) 
+    df.loc[:,"<" + str(WT[0])]              = (df[column] < WT[0]+LEQC)
+    df.loc[:,str(WT[0]) + "-" + str(WT[1])] = (df[column] >= WT[0]+LEQC) & (df[column] < WT[1]+LEQC)
+    df.loc[:,str(WT[1]) + "-" + str(WT[2])] = (df[column] >= WT[1]+LEQC) & (df[column] < WT[2]+LEQC)
+    df.loc[:,str(WT[2]) + "-" + str(WT[3])] = (df[column] >= WT[2]+LEQC) & (df[column] < WT[3]+LEQC)
+    df.loc[:,str(WT[3]) + "-" + str(WT[4])] = (df[column] >= WT[3]+LEQC) & (df[column] < WT[4]+LEQC)
+    df.loc[:,str(WT[4]) + "-" + str(WT[5])] = (df[column] >= WT[4]+LEQC) & (df[column] < WT[5]+LEQC)
+    df.loc[:,str(WT[5]) + "-" + str(WT[6])] = (df[column] >= WT[5]+LEQC) & (df[column] < WT[6]+LEQC)
+    df.loc[:,str(WT[6]) + "-" + str(WT[7])] = (df[column] >= WT[6]+LEQC) & (df[column] < WT[7]+LEQC)
+    df.loc[:,str(WT[7]) + "-" + str(WT[8])] = (df[column] >= WT[7]+LEQC) & (df[column] < WT[8]+LEQC)
+    df.loc[:,str(WT[8]) + "-" + str(WT[9])] = (df[column] >= WT[8]+LEQC) & (df[column] < WT[9]+LEQC)
+    df.loc[:,str(WT[9]) + "-" + str(WT[10])] = (df[column] >= WT[9]+LEQC) & (df[column] < WT[10]+LEQC)
+    df.loc[:,str(WT[10]) + "-" + str(WT[11])] = (df[column] >= WT[10]+LEQC) & (df[column] < WT[11]+LEQC)
+    df.loc[:,str(WT[11]) + "-" + str(WT[12])] = (df[column] >= WT[11]+LEQC) & (df[column] < WT[12]+LEQC)
+    df.loc[:,">=" + str(WT[12])]              = (df[column] >= WT[12]+LEQC) 
     df = df[df.columns.difference(OColumns)]
     return(df)
 
@@ -243,32 +244,32 @@ def AddColumns(X, D, N, S, L):
     if D not in [0,1] or N not in [0,1] or S not in [0,1] or L not in [0,1]:
         raise Exception('Include Columns(Input, D, N, ST, LT)')
     if D == 1 and N == 0 and S == 1 and L == 0:
-        X['ST_CH'] = X['DSO']-X['DMO']
-        X['ST_CH_GC'] = abs(X['ST_CH'])
+        X.loc[:,'ST_CH'] = X['DSO']-X['DMO']
+        X.loc[:,'ST_CH_GC'] = abs(X['ST_CH'])
     if D == 1 and N == 0 and S == 0 and L == 1:
-        X['LT_CH'] = X['DSD']-X['DMO']
-        X['LT_CH_GC'] = abs(X['LT_CH'])
+        X.loc[:,'LT_CH'] = X['DSD']-X['DMO']
+        X.loc[:,'LT_CH_GC'] = abs(X['LT_CH'])
     if D == 1 and N == 0 and S == 1 and L == 1:
-        X['ST_CH'], X['LT_CH'] = X['DSO']-X['DMO'], X['DSD']-X['DMO']
-        X['ST_CH_GC'], X['LT_CH_GC'] = abs(X['ST_CH']), abs(X['LT_CH'])
+        X.loc[:,'ST_CH'], X['LT_CH'] = X['DSO']-X['DMO'], X['DSD']-X['DMO']
+        X.loc[:,'ST_CH_GC'], X['LT_CH_GC'] = abs(X['ST_CH']), abs(X['LT_CH'])
     if D == 0 and N == 1 and S == 1 and L == 0:
-        X['N_ST_CH'] = X['DSON']-X['DMON']
-        X['N_ST_CH_GC'] = abs(X['N_ST_CH'])
+        X.loc[:,'N_ST_CH'] = X['DSON']-X['DMON']
+        X.loc[:,'N_ST_CH_GC'] = abs(X['N_ST_CH'])
     if D == 0 and N == 1 and S == 0 and L == 1:
-        X['N_LT_CH'] = X['DSDN']-X['DMON']
-        X['N_LT_CH_GC'] = abs(X['N_LT_CH'])
+        X.loc[:,'N_LT_CH'] = X['DSDN']-X['DMON']
+        X.loc[:,'N_LT_CH_GC'] = abs(X['N_LT_CH'])
     if D == 0 and N == 1 and S == 1 and L == 1:
-        X['N_ST_CH'], X['N_LT_CH'] = X['DSON']-X['DMON'], X['DSDN']-X['DMON']
-        X['N_ST_CH_GC'], X['N_LT_CH_GC'] = abs(X['N_ST_CH']), abs(X['N_LT_CH'])
+        X.loc[:,'N_ST_CH'], X.loc[:,'N_LT_CH'] = X['DSON']-X['DMON'], X['DSDN']-X['DMON']
+        X.loc[:,'N_ST_CH_GC'], X.loc[:,'N_LT_CH_GC'] = abs(X['N_ST_CH']), abs(X['N_LT_CH'])
     if D == 1 and N == 1 and S == 1 and L== 0:
-        X['ST_CH'], X['N_ST_CH'] = X['DSO']-X['DMO'], X['DSON']-X['DMON']
-        X['ST_CH_GC'], X['N_ST_CH_GC'] = abs(X['ST_CH']), abs(X['N_ST_CH'])
+        X.loc[:,'ST_CH'], X.loc[:,'N_ST_CH'] = X['DSO']-X['DMO'], X['DSON']-X['DMON']
+        X.loc[:,'ST_CH_GC'], X.loc[:,'N_ST_CH_GC'] = abs(X['ST_CH']), abs(X['N_ST_CH'])
     if D == 1 and N == 1 and S == 0 and L == 1:
-        X['LT_CH'], X['N_LT_CH'] = X['DSD']-X['DMO'], X['DSON']-X['DMON']
-        X['LT_CH_GC'], X['N_LT_CH_GC'] =  abs(X['LT_CH']), abs(X['N_LT_CH'])
+        X.loc[:,'LT_CH'], X.loc[:,'N_LT_CH'] = X['DSD']-X['DMO'], X['DSON']-X['DMON']
+        X.loc[:,'LT_CH_GC'], X.loc[:,'N_LT_CH_GC'] =  abs(X['LT_CH']), abs(X['N_LT_CH'])
     if D == 1 and N == 1 and S == 1 and L == 1:
-        X['ST_CH'], X['LT_CH'], X['N_ST_CH'], X['N_LT_CH'] = X['DSO']-X['DMO'], X['DSD']-X['DMO'], X['DSON']-X['DMON'], X['DSDN']-X['DMON']
-        X['ST_CH_GC'], X['LT_CH_GC'], X['N_ST_CH_GC'], X['N_LT_CH_GC'] = abs(X['ST_CH']), abs(X['LT_CH']), abs(X['N_ST_CH']), abs(X['N_LT_CH'])
+        X.loc[:,'ST_CH'], X.loc[:,'LT_CH'], X.loc[:,'N_ST_CH'], X.loc[:,'N_LT_CH'] = X['DSO']-X['DMO'], X['DSD']-X['DMO'], X['DSON']-X['DMON'], X['DSDN']-X['DMON']
+        X.loc[:,'ST_CH_GC'], X.loc[:,'LT_CH_GC'], X.loc[:,'N_ST_CH_GC'], X.loc[:,'N_LT_CH_GC'] = abs(X['ST_CH']), abs(X['LT_CH']), abs(X['N_ST_CH']), abs(X['N_LT_CH'])
     OColumns = list(X.columns.difference(X.filter(regex='_GC',axis=1).columns)) # Columns without GC
     Columns = list(X.columns) # Columns with GC
     return(X, Columns, OColumns)
@@ -276,13 +277,18 @@ def AddColumns(X, D, N, S, L):
 def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     Tab1 = np.round(Tab1,1)
     ST, LT = [5, 3, 1, 0, -1, -3, -5], [10, 5, 3, 0, -3, -5, -10]
-    RelDF = pd.DataFrame(Tab1[OColumns]).drop_duplicates(subset="BLD", keep = "first")
+   
+    RelDF2 = pd.DataFrame(Tab1.drop_duplicates(subset="BLD", keep = "first"))
+    RelDF = RelDF2[OColumns]
+    RelDF.set_index('BLD', inplace=True)
+
     DMRB_ST = pd.DataFrame(columns=['ST Day RES', 'ST Day OSR', 'ST Night RES', 'ST Night OSR'])
     DMRB_LT = pd.DataFrame(columns=['LT Day RES', 'LT Day OSR', 'LT Night RES', 'LT Night OSR'])
-    DMRB_ST['Change'] = ['<=-5','>-5<=-3', '>-3<=-1', '>=-1<0', '=0','>0<1','>=1<3','>=3<5','>=5']
-    DMRB_LT['Change'] = ['<=-10','>-10<=-5', '>-5<=-3', '>=-3<0', '=0','>0<3','>=3<5','>=5<10','>=10']
+    DMRB_ST.loc[:,'Change'] = ['<=-5','>-5<=-3', '>-3<=-1', '>=-1<0', '=0','>0<1','>=1<3','>=3<5','>=5']
+    DMRB_LT.loc[:,'Change'] = ['<=-10','>-10<=-5', '>-5<=-3', '>=-3<0', '=0','>0<3','>=3<5','>=5<10','>=10']
     DMRB_ST.set_index(['Change'], inplace=True)
     DMRB_LT.set_index(['Change'], inplace=True)
+    
     
     if S == 0 and L == 0:
         raise Exception('Short term or Long term input required LBCGC(Tab1, Columns, OColumns, D, N, ->ST, ->LT)')
@@ -292,7 +298,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     if D == 1 and S == 1:
         Tab1STGC1 = Tab1[Tab1['ST_CH_GC'] == Tab1.groupby('BLD')['ST_CH_GC'].transform('max')]
         Tab1STGC = pd.DataFrame(Tab1STGC1[Tab1STGC1['DSO'] == Tab1STGC1.groupby('BLD')['DSO'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        RelDF.update(Tab1STGC)
+        Tab1STGC.set_index('BLD', inplace=True)
+        RelDF.update(Tab1STGC['ST_CH'])
         Tab1STGCRES, Tab1STGCOSR = Tab1STGC[Tab1STGC['SNSTV']=='RES'], Tab1STGC[Tab1STGC['SNSTV']=='OSR']
         DMRBChange(Tab1STGCRES, 'ST_CH', ST)
         DMRBChange(Tab1STGCOSR, 'ST_CH', ST)
@@ -306,7 +313,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     if D == 1 and L == 1:    
         Tab1LTGC1 = Tab1[Tab1['LT_CH_GC'] == Tab1.groupby('BLD')['LT_CH_GC'].transform('max')]
         Tab1LTGC = pd.DataFrame(Tab1LTGC1[Tab1LTGC1['DSD'] == Tab1LTGC1.groupby('BLD')['DSD'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        RelDF.update(Tab1LTGC)
+        Tab1LTGC.set_index('BLD', inplace=True)
+        RelDF.update(Tab1LTGC['LT_CH'])
         Tab1LTGCRES, Tab1LTGCOSR = Tab1LTGC[Tab1LTGC['SNSTV']=='RES'], Tab1LTGC[Tab1LTGC['SNSTV']=='OSR']
         DMRBChange(Tab1LTGCRES, 'LT_CH', LT)
         DMRBChange(Tab1LTGCOSR, 'LT_CH', LT)
@@ -320,7 +328,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     if N == 1 and S == 1:    
         Tab1NSTGC1 = Tab1[Tab1['N_ST_CH_GC'] == Tab1.groupby('BLD')['N_ST_CH_GC'].transform('max')]
         Tab1NSTGC = pd.DataFrame(Tab1NSTGC1[Tab1NSTGC1['DSON'] == Tab1NSTGC1.groupby('BLD')['DSON'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        RelDF.update(Tab1NSTGC)
+        Tab1NSTGC.set_index('BLD', inplace=True)
+        RelDF.update(Tab1NSTGC['N_ST_CH'])
         Tab1NSTGCRES, Tab1NSTGCOSR = Tab1NSTGC[Tab1NSTGC['SNSTV']=='RES'], Tab1NSTGC[Tab1NSTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NSTGCRES, 'N_ST_CH', ST)
         DMRBChange(Tab1NSTGCOSR, 'N_ST_CH', ST)
@@ -334,7 +343,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     if N == 1 and L == 1:     
         Tab1NLTGC1 = Tab1[Tab1['N_LT_CH_GC'] == Tab1.groupby('BLD')['N_LT_CH_GC'].transform('max')]
         Tab1NLTGC = pd.DataFrame(Tab1NLTGC1[Tab1NLTGC1['DSDN'] == Tab1NLTGC1.groupby('BLD')['DSDN'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        RelDF.update(Tab1NLTGC)
+        Tab1NLTGC.set_index('BLD', inplace=True)
+        RelDF.update(Tab1NLTGC['N_LT_CH'])
         Tab1NLTGCRES, Tab1NLTGCOSR = Tab1NLTGC[Tab1NLTGC['SNSTV']=='RES'], Tab1NLTGC[Tab1NLTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NLTGCRES, 'N_LT_CH', LT)
         DMRBChange(Tab1NLTGCOSR, 'N_LT_CH', LT)
@@ -352,60 +362,69 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     return(DMRB_ST, DMRB_LT, RelDF)
 
 def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S, L, G, P):
-
-    AbsDF = pd.DataFrame(Tab1[OColumns])
+    AbsDF2 = pd.DataFrame(Tab1.drop_duplicates(subset="BLD", keep = "first"))
+    AbsDF = AbsDF2[OColumns]
+    AbsDF.set_index('BLD', inplace=True)
+    
+    
+    
+    #long term day
+    if D == 1 and L == 1:
+        Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')]
+        Tab1DSDAbs = pd.DataFrame(Tab1DSDAbs1[Tab1DSDAbs1['LT_CH_GC'] == Tab1DSDAbs1.groupby('BLD')['LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1DSDAbs.set_index('BLD', inplace=True)
+        AbsDF.update(Tab1DSDAbs['DSD'])
+        AbsDF.update(Tab1DSDAbs['DMD'])
     
     #short term day
     if D == 1 and S == 1:
         Tab1DSOAbs1 = Tab1[Tab1['DSO'] == Tab1.groupby('BLD')['DSO'].transform('max')]
         Tab1DSOAbs = pd.DataFrame(Tab1DSOAbs1[Tab1DSOAbs1['ST_CH_GC'] == Tab1DSOAbs1.groupby('BLD')['ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1DSOAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSOAbs['DSO'])
+        AbsDF.update(Tab1DSOAbs['DMO'])
         
-    #long term day
-    if D == 1 and L == 1:
-        Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')]
-        Tab1DSDAbs = pd.DataFrame(Tab1DSDAbs1[Tab1DSDAbs1['LT_CH_GC'] == Tab1DSDAbs1.groupby('BLD')['LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        AbsDF.update(Tab1DSDAbs['DSD'])
-  
-    #short term night
-    if N == 1 and S == 1:
-        Tab1DSONAbs1 = Tab1[Tab1['DSON'] == Tab1.groupby('BLD')['DSON'].transform('max')]
-        Tab1DSONAbs = pd.DataFrame(Tab1DSONAbs1[Tab1DSONAbs1['N_ST_CH_GC'] == Tab1DSONAbs1.groupby('BLD')['N_ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
-        AbsDF.update(Tab1DSONAbs['DSON'])    
-    
+
     #long term night
     if N == 1 and L == 1:
         Tab1DSDNAbs1 = Tab1[Tab1['DSDN'] == Tab1.groupby('BLD')['DSDN'].transform('max')]
         Tab1DSDNAbs = pd.DataFrame(Tab1DSDNAbs1[Tab1DSDNAbs1['N_LT_CH_GC'] == Tab1DSDNAbs1.groupby('BLD')['N_LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1DSDNAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSDNAbs['DSDN'])
-    
-    AbsDF = AbsDF.set_index('BLD')
-    RelDF = RelDF.set_index('BLD')
-    
+        AbsDF.update(Tab1DSDNAbs['DMDN'])
+        
+    #short term night
+    if N == 1 and S == 1:
+        Tab1DSONAbs1 = Tab1[Tab1['DSON'] == Tab1.groupby('BLD')['DSON'].transform('max')]
+        Tab1DSONAbs = pd.DataFrame(Tab1DSONAbs1[Tab1DSONAbs1['N_ST_CH_GC'] == Tab1DSONAbs1.groupby('BLD')['N_ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
+        Tab1DSONAbs.set_index('BLD', inplace=True)
+        AbsDF.update(Tab1DSONAbs['DSON'])
+        AbsDF.update(Tab1DSDNAbs['DMON'])
+            
     if D == 1 and S == 1:
         AbsDF.update(RelDF['ST_CH'])
-        AbsDF['DSO_LOAEL'] = np.where((AbsDF['DSO']>=LOAEL) & (AbsDF['DSO']<SOAEL),'Yes','No')
-        AbsDF['DSO_SOAEL'] = np.where(AbsDF['DSO']>=SOAEL,'Yes','No')
-        AbsDF['DSO_NEW_LOAEL'] = np.where((AbsDF['DMO']<LOAEL) & (AbsDF['DSO']>=LOAEL),'Yes','No')
-        AbsDF['DSO_NEW_SOAEL'] = np.where((AbsDF['DMO']<SOAEL) & (AbsDF['DSO']>=SOAEL),'Yes','No')
+        AbsDF.loc[:,'DSO_LOAEL'] = np.where((AbsDF.loc[:,'DSO']>=LOAEL) & (AbsDF['DSO']<SOAEL),'Yes','No')
+        AbsDF.loc[:,'DSO_SOAEL'] = np.where(AbsDF.loc[:,'DSO']>=SOAEL,'Yes','No')
+        AbsDF.loc[:,'DSO_NEW_LOAEL'] = np.where((AbsDF.loc[:,'DMO']<LOAEL) & (AbsDF['DSO']>=LOAEL),'Yes','No')
+        AbsDF.loc[:,'DSO_NEW_SOAEL'] = np.where((AbsDF.loc[:,'DMO']<SOAEL) & (AbsDF['DSO']>=SOAEL),'Yes','No')
     if D == 1 and L == 1:
         AbsDF.update(RelDF['LT_CH'])
-        AbsDF['DSD_LOAEL'] = np.where((AbsDF['DSD']>=LOAEL) & (AbsDF['DSD']<SOAEL),'Yes','No')
-        AbsDF['DSD_SOAEL'] = np.where(AbsDF['DSD']>=SOAEL,'Yes','No')
-        AbsDF['DSD_NEW_LOAEL'] = np.where((AbsDF['DMO']<LOAEL) & (AbsDF['DSD']>=LOAEL),'Yes','No')
-        AbsDF['DSD_NEW_SOAEL'] = np.where((AbsDF['DMO']<SOAEL) & (AbsDF['DSD']>=SOAEL),'Yes','No')
+        AbsDF.loc[:,'DSD_LOAEL'] = np.where((AbsDF.loc[:,'DSD']>=LOAEL) & (AbsDF['DSD']<SOAEL),'Yes','No')
+        AbsDF.loc[:,'DSD_SOAEL'] = np.where(AbsDF.loc[:,'DSD']>=SOAEL,'Yes','No')
+        AbsDF.loc[:,'DSD_NEW_LOAEL'] = np.where((AbsDF.loc[:,'DMO']<LOAEL) & (AbsDF['DSD']>=LOAEL),'Yes','No')
+        AbsDF.loc[:,'DSD_NEW_SOAEL'] = np.where((AbsDF.loc[:,'DMO']<SOAEL) & (AbsDF['DSD']>=SOAEL),'Yes','No')
     if N == 1 and S == 1:
         AbsDF.update(RelDF['N_ST_CH'])
-        AbsDF['DSON_LOAEL'] = np.where((AbsDF['DSON']>=NLOAEL) & (AbsDF['DSON']<NSOAEL),'Yes','No')
-        AbsDF['DSON_SOAEL'] = np.where(AbsDF['DSON']>=NSOAEL,'Yes','No')
-        AbsDF['DSON_NEW_LOAEL'] = np.where((AbsDF['DMON']<NLOAEL) & (AbsDF['DSON']>=NLOAEL),'Yes','No')
-        AbsDF['DSON_NEW_SOAEL'] = np.where((AbsDF['DMON']<NSOAEL) & (AbsDF['DSON']>=NSOAEL),'Yes','No')
+        AbsDF.loc[:,'DSON_LOAEL'] = np.where((AbsDF.loc[:,'DSON']>=NLOAEL) & (AbsDF['DSON']<NSOAEL),'Yes','No')
+        AbsDF.loc[:,'DSON_SOAEL'] = np.where(AbsDF.loc[:,'DSON']>=NSOAEL,'Yes','No')
+        AbsDF.loc[:,'DSON_NEW_LOAEL'] = np.where((AbsDF.loc[:,'DMON']<NLOAEL) & (AbsDF['DSON']>=NLOAEL),'Yes','No')
+        AbsDF.loc[:,'DSON_NEW_SOAEL'] = np.where((AbsDF.loc[:,'DMON']<NSOAEL) & (AbsDF['DSON']>=NSOAEL),'Yes','No')
     if N == 1 and L == 1: 
         AbsDF.update(RelDF['N_LT_CH'])
-        AbsDF['DSDN_LOAEL'] = np.where((AbsDF['DSDN']>=NLOAEL) & (AbsDF['DSDN']<NSOAEL),'Yes','No')
-        AbsDF['DSDN_SOAEL'] = np.where(AbsDF['DSDN']>=NSOAEL,'Yes','No')
-        AbsDF['DSDN_NEW_LOAEL'] = np.where((AbsDF['DMON']<NLOAEL) & (AbsDF['DSDN']>=NLOAEL),'Yes','No')
-        AbsDF['DSDN_NEW_SOAEL'] = np.where((AbsDF['DMON']<NSOAEL) & (AbsDF['DSDN']>=NSOAEL),'Yes','No')  
+        AbsDF.loc[:,'DSDN_LOAEL'] = np.where((AbsDF.loc[:,'DSDN']>=NLOAEL) & (AbsDF['DSDN']<NSOAEL),'Yes','No')
+        AbsDF.loc[:,'DSDN_SOAEL'] = np.where(AbsDF.loc[:,'DSDN']>=NSOAEL,'Yes','No')
+        AbsDF.loc[:,'DSDN_NEW_LOAEL'] = np.where((AbsDF.loc[:,'DMON']<NLOAEL) & (AbsDF['DSDN']>=NLOAEL),'Yes','No')
+        AbsDF.loc[:,'DSDN_NEW_SOAEL'] = np.where((AbsDF.loc[:,'DMON']<NSOAEL) & (AbsDF['DSDN']>=NSOAEL),'Yes','No')  
 
     if P == 1:
         print('> Saving excel file as output.xlsx')
