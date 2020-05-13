@@ -6,22 +6,18 @@ from ipywidgets import Checkbox, Output, VBox, widgets, Layout, Box, Label
 from os import listdir, mkdir, path
 from os.path import isfile, join
 from IPython.display import display, display_html, Markdown
-from shutil import make_archive, rmtree
+from shutil import make_archive, rmtree   
 try:
 	import geopandas as gpd
 	print("> Geopandas version: ", gpd.__version__)
 except ImportError:
 	print("> Geopandas not installed. Shape files cannot be exported.")
 
-def DisplayWebTAGTables(WebTAG1, WebTAG2, W):
-    if W == 1:
-        df1_styler = WebTAG1.style.set_table_attributes("style='display:block'") \
-                    .set_caption("Opening year: no. of households experiencing 'without scheme' and 'with scheme' noise levels")
-        df2_styler = WebTAG2.style.set_table_attributes("style='display:block'") \
-                    .set_caption("Forecast year: no. of households experiencing 'without scheme' and 'with scheme' noise levels")
-        display_html(df1_styler._repr_html_()+df2_styler._repr_html_(), raw=True)
-    return()
-
+    # Main function (Main) that provides main loop for GUI elements. Inputs are the file input 
+    # location, output location, and criteria parameters for LOAEL, SOAEL, NLOAEL and NSOAEL.
+    # This function largely relates to the OPERATION of the software, and is not associated 
+    # any acoustic parameters or assumptions. 
+    
 def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
     out = Output()
     display(Markdown("<span style='color:red'>DMRB LA111 Processing Tool</span>"))
@@ -36,8 +32,8 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
             else:
                 fullpath = inputloc+Fileoutput[0]
                 Tab1 = ExcelRead(fullpath)
-                Tab1, Columns, OColumns = AddColumns(Tab1,D,N,S,L) # Columns(Input, Day, Night, ST, LT)
-                DMRB_ST, DMRB_LT, RelDF = LBCGC(Tab1, Columns, OColumns, D, N, S, L) #LBCGC(Tab1, Columns, OColumns, D, N, ST, LT)
+                Tab1, Columns, OColumns = AddColumns(Tab1,D,N,S,L)
+                DMRB_ST, DMRB_LT, RelDF = LBCGC(Tab1, Columns, OColumns, D, N, S, L)
                 DisplayDMRBTables(DMRB_ST, DMRB_LT, S, L)
                 AbsDF = AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outputloc, D, N, S, L, G, P)
                 WebTAG1, WebTAG2 = WebTAG(AbsDF, OColumns, W)
@@ -92,6 +88,9 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
     display(button)
     button.on_click(on_button_clicked)
     return(out)
+
+    # This function (Selection) processes inputs from the user and outputs required parameters for other functions. 
+    # It relates to the OPERATION of the software, and is not associated any acoustic parameters or assumptions. 
 
 def Selection(FileList, Day, Night, ST, LT, PS, WT, GS, D, N, S, L, P, W, G):
     Fileoutput = []
@@ -156,6 +155,12 @@ def Selection(FileList, Day, Night, ST, LT, PS, WT, GS, D, N, S, L, P, W, G):
             G = 0   
     return(Fileoutput, val, D, N, S, L, P, W, G)
 
+    # This function (WebTAG) prepares the WebTAG table. Residential 'RES' rows are selected from 
+    # the buidling evaluation data and are passed to the Tabular function that sorts values in
+    # in 3dB catagories. The table (dataframe) is iterated over each row and column, between 
+    # DMO - DSO, DMD - DSD for the opening year and future year comparisons and returns the 
+    # table for each.  
+    
 def WebTAG(dfInput, OColumns, W):
     if W == 1:
         df = dfInput[dfInput['SNSTV']=='RES'].reset_index()[OColumns]
@@ -174,6 +179,9 @@ def WebTAG(dfInput, OColumns, W):
     else:
         WebTAGdf1, WebTAGdf2 = 0, 0
     return(WebTAGdf1, WebTAGdf2)
+
+    # This function (DisplayDMRBTables) styles pandas dataframes for CSS / HTML. It relates to the 
+    # OPERATION of the software, and is not associated any acoustic parameters or assumptions. 
 
 def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
     DMRB_ST.fillna(0, inplace=True)
@@ -200,6 +208,22 @@ def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
         display_html(df2_styler._repr_html_(), raw=True)
     return()
 
+    # This function (DisplayWebTAGTables) styles pandas dataframes for CSS / HTML. It relates to the 
+    # OPERATION of the software, and is not associated any acoustic parameters or assumptions. 
+    
+def DisplayWebTAGTables(WebTAG1, WebTAG2, W):
+    if W == 1:
+        df1_styler = WebTAG1.style.set_table_attributes("style='display:block'") \
+                    .set_caption("Opening year: no. of households experiencing 'without scheme' and 'with scheme' noise levels")
+        df2_styler = WebTAG2.style.set_table_attributes("style='display:block'") \
+                    .set_caption("Forecast year: no. of households experiencing 'without scheme' and 'with scheme' noise levels")
+        display_html(df1_styler._repr_html_()+df2_styler._repr_html_(), raw=True)
+    return()
+
+    # The DMRBChange function catagories changes by criteria set by the input. It accepts the
+    # table (dataframe) as an input (df), followed by the column to be processed, and a 7
+    # item list. For short term values: [5, 3, 1, 0, -1, -3, -5]
+
 def DMRBChange(df, column, DT):
     df.loc[:,">=" + str(DT[0])]                    = (df[column] >= DT[0])
     df.loc[:,">=" + str(DT[1]) + "<" + str(DT[0])] = (df[column] < DT[0]) & (df[column] >= DT[1])
@@ -212,8 +236,14 @@ def DMRBChange(df, column, DT):
     df.loc[:,"<=" + str(DT[6])]                    = (df[column] <= DT[6])
     return
 
+    # The Tabular function catagories changes by criteria set by the input for the WebTAG function. 
+    # It accepts the table (dataframe) as an input (df), followed by the column to be processed (column), 
+    # a filter column (the columns we want in the final output) and the item list. To produce WebTAG 
+    # tables: WT = [45,48,51,54,57,60,63,66,69,72,75,78,81].
+    # An Leq coreciton is also added LEQC = 2 to convert L10 to Leq16hr
+
 def Tabular(df, column, OColumns, WT):
-    LEQC = 2   # L10 to Leq16hr correction
+    LEQC = 2
     df.loc[:,"<" + str(WT[0])]              = (df[column] < WT[0]+LEQC)
     df.loc[:,str(WT[0]) + "-" + str(WT[1])] = (df[column] >= WT[0]+LEQC) & (df[column] < WT[1]+LEQC)
     df.loc[:,str(WT[1]) + "-" + str(WT[2])] = (df[column] >= WT[1]+LEQC) & (df[column] < WT[2]+LEQC)
@@ -231,6 +261,9 @@ def Tabular(df, column, OColumns, WT):
     df = df[df.columns.difference(OColumns)]
     return(df)
 
+    # The ExcelRead function reads the excel file and converts it to a pandas dataframe. It relates 
+    # to the  OPERATION of the software, and is not associated any acoustic parameters or assumptions. 
+
 def ExcelRead(path):
     xl = pd.ExcelFile(path)
     Tabstr = xl.sheet_names  # see all sheet names
@@ -239,6 +272,10 @@ def ExcelRead(path):
         Tabs.append(xl.parse(Tabstr[count]))
     Tab1 = pd.DataFrame(Tabs[0])
     return(Tab1)
+
+    # The AddColumns function is called by the main function to add columns to the incoming dataframe, 
+    # depending on the input values chosen. Two column filters Columns and OColumns (O = original), with 
+    # and without the greatest change values are kept for further operations.
 
 def AddColumns(X, D, N, S, L):
     if D not in [0,1] or N not in [0,1] or S not in [0,1] or L not in [0,1]:
@@ -270,18 +307,25 @@ def AddColumns(X, D, N, S, L):
     if D == 1 and N == 1 and S == 1 and L == 1:
         X.loc[:,'ST_CH'], X.loc[:,'LT_CH'], X.loc[:,'N_ST_CH'], X.loc[:,'N_LT_CH'] = X['DSO']-X['DMO'], X['DSD']-X['DMO'], X['DSON']-X['DMON'], X['DSDN']-X['DMON']
         X.loc[:,'ST_CH_GC'], X.loc[:,'LT_CH_GC'], X.loc[:,'N_ST_CH_GC'], X.loc[:,'N_LT_CH_GC'] = abs(X['ST_CH']), abs(X['LT_CH']), abs(X['N_ST_CH']), abs(X['N_LT_CH'])
-    OColumns = list(X.columns.difference(X.filter(regex='_GC',axis=1).columns)) # Columns without GC
-    Columns = list(X.columns) # Columns with GC
+    OColumns = list(X.columns.difference(X.filter(regex='_GC',axis=1).columns)) # GC columns are not always needed and are removed
+    Columns = list(X.columns) # Columns are kept with GC
     return(X, Columns, OColumns)
 
+    # The LBCGC function processes the incoming building evaluation data and calculates the greatest 
+    # change in line with LA111. 
+    
 def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     Tab1 = np.round(Tab1,1)
     ST, LT = [5, 3, 1, 0, -1, -3, -5], [10, 5, 3, 0, -3, -5, -10]
-   
+       
+    # A dummy dataset is created from the input and is filled by later operations. Building IDs 
+    # in order + columns
     RelDF2 = pd.DataFrame(Tab1.drop_duplicates(subset="BLD", keep = "first"))
     RelDF = RelDF2[OColumns]
     RelDF.set_index('BLD', inplace=True)
 
+    # A new dataframe is created for the short term and long term counts which will become the
+    # DMRB tables.
     DMRB_ST = pd.DataFrame(columns=['ST Day RES', 'ST Day OSR', 'ST Night RES', 'ST Night OSR'])
     DMRB_LT = pd.DataFrame(columns=['LT Day RES', 'LT Day OSR', 'LT Night RES', 'LT Night OSR'])
     DMRB_ST.loc[:,'Change'] = ['<=-5','>-5<=-3', '>-3<=-1', '>=-1<0', '=0','>0<1','>=1<3','>=3<5','>=5']
@@ -289,14 +333,25 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     DMRB_ST.set_index(['Change'], inplace=True)
     DMRB_LT.set_index(['Change'], inplace=True)
     
+    # error checking from input. We need short term or long term and day or night selected
     
     if S == 0 and L == 0:
         raise Exception('Short term or Long term input required LBCGC(Tab1, Columns, OColumns, D, N, ->ST, ->LT)')
     if D == 0 and N == 0:
         raise Exception('Day or Night input required LBCGC(Tab1, Columns, OColumns, ->D, ->N, ST, LT)')
         
+    # The buidling evaluation data is 'grouped' by building and sorted ('transformed') by the  
+    # maximum greatest change value (ST_CH_GC). To avoid duplicates, this is then sorted by the highest
+    # value in the design variant, and then any remaining duplicates are dropped (by first value). 
+    # The order is: Greatest change > Maximum absolute value > First remaining value.
+    # The dummy dataset is then updated with the updated (greatest) ST_CH values
+    # The data is then filtered by 'RES' and 'OSR' for residential and other sensitive receptors and then
+    # passed to the DMRBChange function which sorts the short term changes into catagory columns. 
+    # These are then summed for each column and then the new DMRB dataframe is updated. This process is then
+    # repeated for short term / long term, day / night., 
+    
     if D == 1 and S == 1:
-        Tab1STGC1 = Tab1[Tab1['ST_CH_GC'] == Tab1.groupby('BLD')['ST_CH_GC'].transform('max')]
+        Tab1STGC1 = Tab1[Tab1['ST_CH_GC'] == Tab1.groupby('BLD')['ST_CH_GC'].transform('max')] # greatest change
         Tab1STGC = pd.DataFrame(Tab1STGC1[Tab1STGC1['DSO'] == Tab1STGC1.groupby('BLD')['DSO'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1STGC.set_index('BLD', inplace=True)
         RelDF.update(Tab1STGC['ST_CH'])
@@ -309,7 +364,7 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         STDayOSRGC.set_index('Change', inplace=True)
         DMRB_ST.update(STDayDwellGC['ST Day RES'])
         DMRB_ST.update(STDayOSRGC['ST Day OSR'])
-        
+    
     if D == 1 and L == 1:    
         Tab1LTGC1 = Tab1[Tab1['LT_CH_GC'] == Tab1.groupby('BLD')['LT_CH_GC'].transform('max')]
         Tab1LTGC = pd.DataFrame(Tab1LTGC1[Tab1LTGC1['DSD'] == Tab1LTGC1.groupby('BLD')['DSD'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
@@ -355,43 +410,55 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         DMRB_LT.update(LTNightDwellGC['LT Night RES'])
         DMRB_LT.update(LTNightOSRGC['LT Night OSR'])
     
+    # Once the DMRB dataframes are created, totals for each column are calculated. 
+    
     DMRB_ST.loc["Total"] = DMRB_ST.sum()
     DMRB_LT.loc["Total"] = DMRB_LT.sum()
     DMRB_ST.reset_index(inplace=True)
     DMRB_LT.reset_index(inplace=True)
     return(DMRB_ST, DMRB_LT, RelDF)
 
+    # AbsOut processes the absolute values from the buidling evaluation data and prepares  
+    # the results for export to Excel and zipped shapefiles
+
 def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S, L, G, P):
     AbsDF2 = pd.DataFrame(Tab1.drop_duplicates(subset="BLD", keep = "first"))
     AbsDF = AbsDF2[OColumns]
     AbsDF.set_index('BLD', inplace=True)
     
+    # To determine LOAEL and SOAELs:
+    # Maximum absolute values for building maintained from DSD and DSO (Day and night) 
+    # and results kept for a facade in pairs DSD-DMD, DSO-DMO, DSDN-DMDN, DSON-DMON 
+    # This can be changed to the maximum value for every variant if preferred, however
+    # this impacts the way in which NEW LOAELs and SOAELs are selectred.
     
+    # The buidling evaluation data is 'grouped' by building and sorted ('transformed') by the  
+    # maximum value in the design variant. To avoid duplicates, this is then sorted by the greatest
+    # change, and then duplicates are dropped. So maximum absolute value > greatest change
     
     #long term day
     if D == 1 and L == 1:
-        Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')]
+        Tab1DSDAbs1 = Tab1[Tab1['DSD'] == Tab1.groupby('BLD')['DSD'].transform('max')] 
         Tab1DSDAbs = pd.DataFrame(Tab1DSDAbs1[Tab1DSDAbs1['LT_CH_GC'] == Tab1DSDAbs1.groupby('BLD')['LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1DSDAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSDAbs['DSD'])
-        AbsDF.update(Tab1DSDAbs['DMD'])
+        AbsDF.update(Tab1DSDAbs['DMD']) # DMD maintained from DSO max filter
     
     #short term day
     if D == 1 and S == 1:
-        Tab1DSOAbs1 = Tab1[Tab1['DSO'] == Tab1.groupby('BLD')['DSO'].transform('max')]
+        Tab1DSOAbs1 = Tab1[Tab1['DSO'] == Tab1.groupby('BLD')['DSO'].transform('max')] 
         Tab1DSOAbs = pd.DataFrame(Tab1DSOAbs1[Tab1DSOAbs1['ST_CH_GC'] == Tab1DSOAbs1.groupby('BLD')['ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1DSOAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSOAbs['DSO'])
-        AbsDF.update(Tab1DSOAbs['DMO'])
-        
+        AbsDF.update(Tab1DSOAbs['DMO']) # DMO maintained from DSO max filter
 
     #long term night
     if N == 1 and L == 1:
-        Tab1DSDNAbs1 = Tab1[Tab1['DSDN'] == Tab1.groupby('BLD')['DSDN'].transform('max')]
+        Tab1DSDNAbs1 = Tab1[Tab1['DSDN'] == Tab1.groupby('BLD')['DSDN'].transform('max')] 
         Tab1DSDNAbs = pd.DataFrame(Tab1DSDNAbs1[Tab1DSDNAbs1['N_LT_CH_GC'] == Tab1DSDNAbs1.groupby('BLD')['N_LT_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1DSDNAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSDNAbs['DSDN'])
-        AbsDF.update(Tab1DSDNAbs['DMDN'])
+        AbsDF.update(Tab1DSDNAbs['DMDN']) # DMDN maintained from DSDN max filter
         
     #short term night
     if N == 1 and S == 1:
@@ -399,8 +466,13 @@ def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S
         Tab1DSONAbs = pd.DataFrame(Tab1DSONAbs1[Tab1DSONAbs1['N_ST_CH_GC'] == Tab1DSONAbs1.groupby('BLD')['N_ST_CH_GC'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1DSONAbs.set_index('BLD', inplace=True)
         AbsDF.update(Tab1DSONAbs['DSON'])
-        AbsDF.update(Tab1DSDNAbs['DMON'])
-            
+        AbsDF.update(Tab1DSDNAbs['DMON']) # DMON maintained from DSON max filter
+
+    # LOAEL and SOAELs are found when exceeding provided inputs 
+    # These are tagged Yes/No in new columns: DSO_LOAEL, DSO_SOAEL etc. LOAEL/SOAEL 
+    # in the DMO is compared to the DSO/DSD and a NEW_SOAEL is found. 
+    # > DMO is the SAME FACADE as DSO <
+
     if D == 1 and S == 1:
         AbsDF.update(RelDF['ST_CH'])
         AbsDF.loc[:,'DSO_LOAEL'] = np.where((AbsDF.loc[:,'DSO']>=LOAEL) & (AbsDF['DSO']<SOAEL),'Yes','No')
