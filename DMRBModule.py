@@ -1,3 +1,6 @@
+# issues / queries contact Ben Saunders (ben.saunders@wsp.com)
+# version 2.2020
+
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import numpy as np
@@ -17,7 +20,8 @@ except ImportError:
     # location, output location, and criteria parameters for LOAEL, SOAEL, NLOAEL and NSOAEL.
     # This function largely relates to the OPERATION of the software, and is not associated 
     # with any acoustic parameters or assumptions. 
-    
+
+
 def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
     out = Output()
     def on_button_clicked(b):
@@ -32,14 +36,14 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
                 fullpath = inputloc+Fileoutput[0]
                 Tab1 = ExcelRead(fullpath)
                 Tab1, Columns, OColumns = AddColumns(Tab1,D,N,S,L)
-                DMRB_ST, DMRB_LT, RelDF = LBCGC(Tab1, Columns, OColumns, D, N, S, L)
-                DisplayDMRBTables(DMRB_ST, DMRB_LT, S, L)
+                DMRB_ST, DMRB_LT, RelDF, RelColumns = LBCGC(Tab1, Columns, OColumns, D, N, S, L)
+                DisplayDMRBTables(DMRB_ST, DMRB_LT, S, L, out)
                 AbsDF, AbsDFCol, NIRDF = AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outputloc, D, N, S, L, I)
-                WebTAG1, WebTAG2 = WebTAG(AbsDF, OColumns, W)
+                RelDF, WebTAG1, WebTAG2 = WebTAG(RelDF, OColumns, W)
                 DisplayWebTAGTables(WebTAG1, WebTAG2, W)
-                DataOutput(AbsDF, AbsDFCol, RelDF, WebTAG1, WebTAG2, NIRDF, G, P, W, I)
+                DataOutput(AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, NIRDF, G, P, W, I)
                 print('\n> Process complete')
-     
+                
     WSPImage = Image(value=open('wsp_RGB.jpg', 'rb').read())
     WSPImage.layout.width = '7%'
     WSPImage.layout.height = '7%'
@@ -77,10 +81,8 @@ def Main(inputloc, outputloc, LOAEL, SOAEL, NLOAEL, NSOAEL):
     ]
     form_items2 = [
         Box([Label(value='LA111 table: '), VBox([ST, LT])], layout=form_item_layout),
-        Box([Label(value='WebTAG: '), VBox([WT])], layout=form_item_layout),
-        Box([Label(value='NIR Calculation: '), VBox([NIR])], layout=form_item_layout),
-        Box([Label(value='Processed data: '), VBox([PS])], layout=form_item_layout),
-        Box([Label(value='GIS: '), VBox([GS])], layout=form_item_layout)
+        Box([Label(value='Further calculation: '), VBox([WT, NIR])], layout=form_item_layout),
+        Box([Label(value='Output: '), VBox([PS, GS])], layout=form_item_layout),
     ]
     form = Box(form_items, layout=Layout(
         display='flex',
@@ -183,9 +185,9 @@ def Selection(FileList, Day, Night, ST, LT, PS, WT, NIR, GS, D, N, S, L, P, W, I
     
 def WebTAG(dfInput, OColumns, W):
     if W == 1:
-        df = dfInput[dfInput['SNSTV']=='RES'].reset_index()[OColumns]
+        df = dfInput[dfInput['SNSTV']=='RES'].reset_index()
         WT = [45,48,51,54,57,60,63,66,69,72,75,78,81]
-        DMOYdf = Tabular(df, 'DMOY', OColumns, WT)
+        DMOYdf = Tabular(df, 'DMOY_ST', OColumns, WT) # Do minimum opening year based on greatest short term change
         DSOYdf = Tabular(df, 'DSOY', OColumns, WT)
         DMFYdf = Tabular(df, 'DMFY', OColumns, WT)
         DSFYdf = Tabular(df, 'DSFY', OColumns, WT)
@@ -194,16 +196,17 @@ def WebTAG(dfInput, OColumns, W):
         WebTAGdf2 = pd.DataFrame(columns=WTCat, index=WTCat)
         for column in WebTAGdf1:            
             for row in WebTAGdf1[column].iteritems():
-                WebTAGdf1.loc[row[0],column] = np.sum((DMOYdf.loc[:,column]==True)&(DSOYdf.loc[:,row[0]]==True))
-                WebTAGdf2.loc[row[0],column] = np.sum((DMFYdf.loc[:,column]==True)&(DSFYdf.loc[:,row[0]]==True))
+                WebTAGdf1.loc[column,row[0]] = np.sum((DMOYdf.loc[:,column]==True)&(DSOYdf.loc[:,row[0]]==True))
+                WebTAGdf2.loc[column,row[0]] = np.sum((DMFYdf.loc[:,column]==True)&(DSFYdf.loc[:,row[0]]==True))
     else:
         WebTAGdf1, WebTAGdf2 = 0, 0
-    return(WebTAGdf1, WebTAGdf2)
+        dfInput.drop('DMOY_ST')
+    return(dfInput, WebTAGdf1, WebTAGdf2)
 
     # This function (DisplayDMRBTables) styles pandas dataframes for CSS / HTML. It relates to the 
     # OPERATION of the software, and is not associated with any acoustic parameters or assumptions. 
 
-def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
+def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L, out):   
     DMRB_ST.fillna(0, inplace=True)
     DMRB_LT.fillna(0, inplace=True)
     Table1 = DMRB_ST.set_index('Change').rename_axis(None)
@@ -225,7 +228,7 @@ def DisplayDMRBTables(DMRB_ST,DMRB_LT, S, L):
     if S == 1 and L == 0:
         display_html(df1_styler._repr_html_(), raw=True)
     if S == 0 and L == 1:
-        display_html(df2_styler._repr_html_(), raw=True)
+        display_html(df2_styler._repr_html_(), raw=True) 
     return()
 
     # This function (DisplayWebTAGTables) styles pandas dataframes for CSS / HTML. It relates to the 
@@ -373,7 +376,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     DMRB_ST.set_index(['Change'], inplace=True)
     DMRB_LT.set_index(['Change'], inplace=True)
     
-    if D == 1 and S == 1: # Setting order of impact columns
+    # Setting order of columns
+    if D == 1 and S == 1: 
         RelDF['ST_Impact'] = ""
     if D == 1 and L == 1:
         RelDF['LT_Impact'] = ""
@@ -382,6 +386,7 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     if D == 1 and L == 1:
         RelDF['N_LT_Impact'] = ""
 
+    RelColumns = list(RelDF.columns) # Columns for magnitude of impact output
     # error checking from input. We need short term or long term and day or night selected
     
     if S == 0 and L == 0:
@@ -406,7 +411,7 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         RelDF.update(Tab1NSTGC['N_ST_CH'])
         
         #facade point values are copied in order of processing (Day long-term is prioritised and is updated last)
-        RelDF.update(Tab1NSTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOYN', 'DSOYN', 'DMFYN', 'DSFYN']])
+        RelDF.update(Tab1NSTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOYN', 'DSOYN']])
         Tab1NSTGCRES, Tab1NSTGCOSR = Tab1NSTGC[Tab1NSTGC['SNSTV']=='RES'], Tab1NSTGC[Tab1NSTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NSTGCRES, 'N_ST_CH', ST)
         DMRBChange(Tab1NSTGCOSR, 'N_ST_CH', ST)
@@ -424,7 +429,7 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         Tab1NLTGC = pd.DataFrame(Tab1NLTGC1[Tab1NLTGC1['DSFYN'] == Tab1NLTGC1.groupby('BLD')['DSFYN'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1NLTGC.set_index('BLD', inplace=True)
         RelDF.update(Tab1NLTGC['N_LT_CH'])
-        RelDF.update(Tab1NLTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOYN', 'DSOYN', 'DMFYN', 'DSFYN']]) 
+        RelDF.update(Tab1NLTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOYN', 'DMFYN', 'DSFYN']]) 
         Tab1NLTGCRES, Tab1NLTGCOSR = Tab1NLTGC[Tab1NLTGC['SNSTV']=='RES'], Tab1NLTGC[Tab1NLTGC['SNSTV']=='OSR']
         DMRBChange(Tab1NLTGCRES, 'N_LT_CH', LT)
         DMRBChange(Tab1NLTGCOSR, 'N_LT_CH', LT)
@@ -442,7 +447,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         Tab1STGC = pd.DataFrame(Tab1STGC1[Tab1STGC1['DSOY'] == Tab1STGC1.groupby('BLD')['DSOY'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1STGC.set_index('BLD', inplace=True)
         RelDF.update(Tab1STGC['ST_CH'])
-        RelDF.update(Tab1STGC[['X', 'Y', 'FAC', 'RCVR', 'DMOY', 'DSOY', 'DMFY', 'DSFY']])
+        RelDF['DMOY_ST'] = Tab1STGC['DMOY']  # for ST webtag calculation
+        RelDF.update(Tab1STGC[['X', 'Y', 'FAC', 'RCVR', 'DMOY', 'DSOY']])
         Tab1STGCRES, Tab1STGCOSR = Tab1STGC[Tab1STGC['SNSTV']=='RES'], Tab1STGC[Tab1STGC['SNSTV']=='OSR']
         DMRBChange(Tab1STGCRES, 'ST_CH', ST)
         DMRBChange(Tab1STGCOSR, 'ST_CH', ST)
@@ -459,8 +465,8 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
         Tab1LTGC1 = Tab1[Tab1['LT_CH_GC'] == Tab1.groupby('BLD')['LT_CH_GC'].transform('max')]
         Tab1LTGC = pd.DataFrame(Tab1LTGC1[Tab1LTGC1['DSFY'] == Tab1LTGC1.groupby('BLD')['DSFY'].transform('max')]).drop_duplicates(subset="BLD", keep = "first")
         Tab1LTGC.set_index('BLD', inplace=True)
-        RelDF.update(Tab1LTGC['LT_CH'])
-        RelDF.update(Tab1LTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOY', 'DSOY', 'DMFY', 'DSFY']])
+        RelDF['DMOY_LT'] = Tab1STGC['DMOY'] # long term do minimum if required
+        RelDF.update(Tab1LTGC[['X', 'Y', 'FAC', 'RCVR', 'DMOY', 'DMFY', 'DSFY']])
         Tab1LTGCRES, Tab1LTGCOSR = Tab1LTGC[Tab1LTGC['SNSTV']=='RES'], Tab1LTGC[Tab1LTGC['SNSTV']=='OSR']
         DMRBChange(Tab1LTGCRES, 'LT_CH', LT)
         DMRBChange(Tab1LTGCOSR, 'LT_CH', LT)
@@ -479,68 +485,12 @@ def LBCGC(Tab1, Columns, OColumns, D, N, S, L):
     DMRB_LT.loc["Total"] = DMRB_LT.sum()
     DMRB_ST.reset_index(inplace=True)
     DMRB_LT.reset_index(inplace=True)
-    return(DMRB_ST, DMRB_LT, RelDF)
+    return(DMRB_ST, DMRB_LT, RelDF, RelColumns)
 
     # AbsOut processes the absolute values from the buidling evaluation data and prepares  
     # the results for export to Excel and zipped shapefiles
-
-def DataOutput(AbsDF, AbsDFCol, RelDF, WebTAG1, WebTAG2, NIRDF, G, P, W, I):
-    if P == 1:
-        print('> Saving data to output.xlsx')
-        AbsDFOut = AbsDF[AbsDFCol]
-        with pd.ExcelWriter("Output/output.xlsx") as writer:  
-            AbsDFOut.to_excel(writer, sheet_name='Highest absolute levels')
-            print('> ... Highest absolute levels')
-            RelDF.to_excel(writer, sheet_name='Magnitude of Impact')
-            print('> ... Magnitude of Impact')
-            if W ==1:
-                print('> ... WebTAG tables')
-                WebTAG1.to_excel(writer, sheet_name='WebTAG', startrow=1)
-                ws = writer.sheets['WebTAG']
-                ws.cell(row=1, column=1).value = "Opening year: no. of households experiencing 'without scheme' and 'with scheme' noise levels"
-                ws.cell(row=18, column=1).value = "Forecast year: no. of households experiencing 'without scheme' and 'with scheme' noise levels"
-                WebTAG2.to_excel(writer, sheet_name='WebTAG', startrow=18)
-            if I ==1:
-                print('> ... facade points exceeding 67.5dB')
-                NIRDF.to_excel(writer, sheet_name='NIR facade points', startrow=0)
+    # Noise insulation calculations are also processed in this function.
     
-    if G == 1:
-        print("> Creating and joining data to shape file")
-        AbsDFgpd = gpd.GeoDataFrame(AbsDF, geometry=gpd.points_from_xy(AbsDF['X'], AbsDF['Y']), crs="epsg:27700")
-        RelDFgpd = gpd.GeoDataFrame(RelDF, geometry=gpd.points_from_xy(RelDF['X'], RelDF['Y']), crs="epsg:27700")
-        if I == 1:
-            NIRDFgpd = gpd.GeoDataFrame(NIRDF, geometry=gpd.points_from_xy(NIRDF['X'], NIRDF['Y']), crs="epsg:27700")
-        root = "Output"
-        base = "zip"
-        tempdir = root+"/"+base +"/"
-        output_filename = "Output"
-        basename = root+"/"+output_filename
-        if path.exists(tempdir):
-            try:
-                rmtree(tempdir)
-            except OSError as e:
-                print("Error: %s : %s" % (tempdir, e.strerror))
-            mkdir(tempdir)
-            AbsDFgpd.to_file(tempdir+"Absolute_Levels.shp")
-            RelDFgpd.to_file(tempdir+"Impact_Magnitude.shp")
-            if I == 1:
-                NIRDFgpd.to_file(tempdir+"NIR_facades.shp")
-            print("> Compressing output to zip file: "+output_filename+".zip")
-            make_archive(base_dir=base, root_dir=root, format='zip', base_name=basename)
-        else:
-            mkdir(tempdir)
-            AbsDFgpd.to_file(tempdir+"Absolute_Levels.shp")
-            RelDFgpd.to_file(tempdir+"Impact_Magnitude.shp")
-            if I == 1:
-                NIRDFgpd.to_file(tempdir+"NIR_facades.shp")
-            print("> Saving "+output_filename+" as zip file")
-            make_archive(base_dir=base, root_dir=root, format='zip', base_name=basename)
-        try:
-            rmtree(tempdir)
-        except OSError as e:
-            print("Error: %s : %s" % (tempdir, e.strerror))
-
-
 def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S, L, I):
     AbsDF2 = pd.DataFrame(Tab1.drop_duplicates(subset="BLD", keep = "first"))
     AbsDF = AbsDF2[OColumns]
@@ -642,6 +592,64 @@ def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, outfile, D, N, S
         print('> Dwellings exceeding 68dB in DSOY and >= 1dB ST change on same facade: ', str(Condition2))   
     return(AbsDF, AbsDFCol, NIRDF)
 
+# DataOutput saves results to excel and zipped shapefiles
+    
+def DataOutput(AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, NIRDF, G, P, W, I):
+    if P == 1:
+        print('> Saving data to output.xlsx')
+        AbsDFOut = AbsDF[AbsDFCol]
+        RelDFOut = RelDF[RelColumns]
+        with pd.ExcelWriter("Output/output.xlsx", engine='openpyxl') as writer:  
+            AbsDFOut.to_excel(writer, sheet_name='Highest absolute levels')
+            print('> ... Highest absolute levels')
+            RelDFOut.to_excel(writer, sheet_name='Magnitude of Impact')
+            print('> ... Magnitude of Impact')
+            if W ==1:
+                print('> ... WebTAG tables')
+                WebTAG1.to_excel(writer, sheet_name='WebTAG', startrow=1)
+                ws = writer.sheets['WebTAG']
+                ws.cell(row=1, column=1).value = "Opening year: no. of households experiencing 'without scheme' and 'with scheme' noise levels"
+                ws.cell(row=18, column=1).value = "Forecast year: no. of households experiencing 'without scheme' and 'with scheme' noise levels"
+                WebTAG2.to_excel(writer, sheet_name='WebTAG', startrow=18)
+            if I ==1:
+                print('> ... facade points exceeding 67.5dB')
+                NIRDF.to_excel(writer, sheet_name='NIR facade points', startrow=0)
+    
+    if G == 1:
+        print("> Creating and joining data to shape file")
+        AbsDFgpd = gpd.GeoDataFrame(AbsDF, geometry=gpd.points_from_xy(AbsDF['X'], AbsDF['Y']), crs="epsg:27700")
+        RelDFgpd = gpd.GeoDataFrame(RelDFOut, geometry=gpd.points_from_xy(RelDF['X'], RelDF['Y']), crs="epsg:27700")
+        if I == 1:
+            NIRDFgpd = gpd.GeoDataFrame(NIRDF, geometry=gpd.points_from_xy(NIRDF['X'], NIRDF['Y']), crs="epsg:27700")
+        root = "Output"
+        base = "zip"
+        tempdir = root+"/"+base +"/"
+        output_filename = "Output"
+        basename = root+"/"+output_filename
+        if path.exists(tempdir):
+            try:
+                rmtree(tempdir)
+            except OSError as e:
+                print("Error: %s : %s" % (tempdir, e.strerror))
+            mkdir(tempdir)
+            AbsDFgpd.to_file(tempdir+"Absolute_Levels.shp")
+            RelDFgpd.to_file(tempdir+"Impact_Magnitude.shp")
+            if I == 1:
+                NIRDFgpd.to_file(tempdir+"NIR_facades.shp")
+            print("> Compressing output to zip file: "+output_filename+".zip")
+            make_archive(base_dir=base, root_dir=root, format='zip', base_name=basename)
+        else:
+            mkdir(tempdir)
+            AbsDFgpd.to_file(tempdir+"Absolute_Levels.shp")
+            RelDFgpd.to_file(tempdir+"Impact_Magnitude.shp")
+            if I == 1:
+                NIRDFgpd.to_file(tempdir+"NIR_facades.shp")
+            print("> Saving "+output_filename+" as zip file")
+            make_archive(base_dir=base, root_dir=root, format='zip', base_name=basename)
+        try:
+            rmtree(tempdir)
+        except OSError as e:
+            print("Error: %s : %s" % (tempdir, e.strerror))
 
     
 
