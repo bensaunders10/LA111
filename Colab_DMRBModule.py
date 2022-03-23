@@ -99,7 +99,7 @@ def Main(filepath, LOAEL, SOAEL, NLOAEL, NSOAEL):
     # This function creates input and output folders if not found 
 def FolderCheck(filepath):
     inputfol = 'Input'
-    outputfol = '\Output'
+    outputfol = 'Output'
     inputloc, outputloc = filepath+inputfol, filepath+outputfol
     if not path.isdir(inputloc):
         mkdir(inputloc)
@@ -653,7 +653,7 @@ def DataOutput(outputloc, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, 
         print('> Saving data to output.xlsx')
         AbsDFOut = AbsDF[AbsDFCol]
         RelDFOut = RelDF[RelColumns]
-        with pd.ExcelWriter(outputloc+"\\output.xlsx", engine='openpyxl') as writer:  
+        with pd.ExcelWriter(filepath+"/Output/output.xlsx", engine='openpyxl') as writer:  
             AbsDFOut.to_excel(writer, sheet_name='Highest absolute levels')
             print('> ... Highest absolute levels')
             RelDFOut.to_excel(writer, sheet_name='Magnitude of Impact')
