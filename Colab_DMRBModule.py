@@ -39,7 +39,7 @@ def Main(filepath, LOAEL, SOAEL, NLOAEL, NSOAEL):
                 RelDF, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2 = WebTAG(RelDF, OColumns, W, D, N)
                 DisplayWebTAGTables(WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, D, N, W)
                 tic4 = time.clock()
-                DataOutput(outputloc, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I)
+                DataOutput(filepath, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I)
                 tic5 = time.clock()
                 print('\n> Process complete')
                 print('\n> Execution time: \n> Read data: ', round(tic1-tic,3),'seconds\n> Magnitude of change calculation: ', round(tic2-tic1,3), 'seconds\n> Absolute levels calculation: ', round(tic3-tic2,3), 'seconds\n> WebTAG calculation: ', round(tic4-tic3,3), 'seconds\n> Output / writing files: ', round(tic5-tic4,3), 'seconds')
@@ -648,7 +648,7 @@ def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, D, N, S, L, I):
     return(AbsDF, AbsDFCol, NIRDF)
 
 # DataOutput saves results to excel
-def DataOutput(outputloc, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I):
+def DataOutput(filepath, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I):
     if P == 1:
         print('> Saving data to output.xlsx')
         AbsDFOut = AbsDF[AbsDFCol]
