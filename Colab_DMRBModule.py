@@ -99,7 +99,7 @@ def Main(filepath, LOAEL, SOAEL, NLOAEL, NSOAEL):
     # This function creates input and output folders if not found 
 def FolderCheck(filepath):
     inputfol = 'Input'
-    outputfol = 'Output'
+    outputfol = '\Output'
     inputloc, outputloc = filepath+inputfol, filepath+outputfol
     if not path.isdir(inputloc):
         mkdir(inputloc)
