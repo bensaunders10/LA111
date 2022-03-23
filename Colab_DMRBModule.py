@@ -39,7 +39,7 @@ def Main(filepath, LOAEL, SOAEL, NLOAEL, NSOAEL):
                 RelDF, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2 = WebTAG(RelDF, OColumns, W, D, N)
                 DisplayWebTAGTables(WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, D, N, W)
                 tic4 = time.clock()
-                DataOutput(filepath, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I)
+                DataOutput(outputloc, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I)
                 tic5 = time.clock()
                 print('\n> Process complete')
                 print('\n> Execution time: \n> Read data: ', round(tic1-tic,3),'seconds\n> Magnitude of change calculation: ', round(tic2-tic1,3), 'seconds\n> Absolute levels calculation: ', round(tic3-tic2,3), 'seconds\n> WebTAG calculation: ', round(tic4-tic3,3), 'seconds\n> Output / writing files: ', round(tic5-tic4,3), 'seconds')
@@ -100,7 +100,7 @@ def Main(filepath, LOAEL, SOAEL, NLOAEL, NSOAEL):
 def FolderCheck(filepath):
     inputfol = 'Input'
     outputfol = 'Output'
-    inputloc, outputloc = filepath+inputfol, filepath+outputfol
+    inputloc, outputloc = filepath+inputfol, filepath
     if not path.isdir(inputloc):
         mkdir(inputloc)
     if not path.isdir(outputloc):
@@ -648,12 +648,12 @@ def AbsOut(Tab1, RelDF, OColumns, LOAEL, SOAEL, NLOAEL, NSOAEL, D, N, S, L, I):
     return(AbsDF, AbsDFCol, NIRDF)
 
 # DataOutput saves results to excel
-def DataOutput(filepath, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I):
+def DataOutput(outputloc, AbsDF, AbsDFCol, RelDF, RelColumns, WebTAG1, WebTAG2, WebTAGN1, WebTAGN2, NIRDF, P, D, N, W, I):
     if P == 1:
         print('> Saving data to output.xlsx')
         AbsDFOut = AbsDF[AbsDFCol]
         RelDFOut = RelDF[RelColumns]
-        with pd.ExcelWriter(filepath+"/Output/output.xlsx", engine='openpyxl') as writer:  
+        with pd.ExcelWriter(outputloc+"/Output/output.xlsx", engine='openpyxl') as writer:  
             AbsDFOut.to_excel(writer, sheet_name='Highest absolute levels')
             print('> ... Highest absolute levels')
             RelDFOut.to_excel(writer, sheet_name='Magnitude of Impact')
